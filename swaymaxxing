@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 # TODO: Add flags for stuff (see other TODOs)
+# Dry run would be good
 
 declare -a required
 required=(
@@ -78,6 +79,7 @@ then
     exit 1
 fi
 
+# TODO: Check for empty variables and warn
 # TODO: Add flag to remove quotes or other symbols from values
 # TODO: Turn this into a function and let people name the associative array
 # Separate to lib dir if you do this
@@ -92,7 +94,7 @@ do
         value="${BASH_REMATCH[1]/*\$${key}[[:blank:]]}"
         confvars["$key"]="$value"
     fi
-done < <(sway --verbose --validate 2>&1)
+done < <(sway --verbose --validate 2>&1) # Verbose validation shows vars
 
 apply_vars() {
     local templ ext real
@@ -119,6 +121,8 @@ apply_vars() {
         fi
     fi
 
+    # TODO: I wonder if I could keep track of how many lines have been read from
+    # ${templ} and then skip over those lines to make things faster?
     while read -r line
     do
         if [[ "$line" =~ %%(.*)%% ]]
@@ -152,3 +156,4 @@ do
 done
 
 log info "Done!"
+exit 0
