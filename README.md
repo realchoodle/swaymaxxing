@@ -1,10 +1,9 @@
 # README.md
 
 `swaymaxxing` is a Bash script that lets you use variables set in your Sway
-configuration files in other files. This script is a ***work in progress***; if
-you decide to use it, do so with caution. While `swaymaxxing` attempts to
-preserve your configuration files, it is still not as safe and featureful as it
-needs to be.
+configs in other files. This script is a ***work in progress***; if you decide
+to use it, do so with caution. While `swaymaxxing` attempts to preserve your
+configuration files, it is still not as safe and featureful as it needs to be.
 
 ## Usage
 
@@ -15,10 +14,10 @@ example:
 swaymaxxing path/to/file0.smxt path/to/file1.smxt path/to/file2.smxt
 ```
 
-`.smxt` (`swaymaxxing` template) is a made-up file extension. `.smxt` files
-use `%%variable%%` to mark items as variables, but should be identical to
+`.smxt` (`swaymaxxing` template) is a made-up file extension. `.smxt` files use
+`%%this_format%%` to mark items as variables, but should be identical to
 whatever file you want to operate on aside from that. For instance, if you had
-the following configuration file for the `mako` program:
+the following configuration file for `mako`:
 
 ```ini
 # ~/.config/mako/config
