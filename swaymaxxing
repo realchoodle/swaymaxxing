@@ -1,0 +1,152 @@
+#!/usr/bin/env bash
+
+declare -a required
+required=(
+    "bash"
+    "sway"
+    "tput"
+    "mv"
+)
+
+for pkg in "${required[@]}"
+do
+    if ! command -v "$pkg" > /dev/null 2>&1
+    then
+        echo "Error: missing '$pkg'"
+        exit 1
+    fi
+done
+
+declare red ylw blu res
+red="${ tput setaf 9; }"
+ylw="${ tput setaf 11; }"
+blu="${ tput setaf 12; }"
+res="${ tput sgr0; }"
+
+# TODO: Include log level flag
+log() {
+    local kind msg prompt
+    kind="$1"
+    msg="$2"
+
+    local -i loglvl
+
+    case "$kind" in
+        err)
+            loglvl=0
+            prompt="ERROR:"
+            printf "${red}%s${res} %s\n" "$prompt" "$msg" >&2
+            ;;
+        warn)
+            loglvl=1
+            prompt="WARN:"
+            printf "${ylw}%s${res} %s\n" "$prompt" "$msg"
+            ;;
+        info)
+            loglvl=2
+            prompt="INFO:"
+            printf "${blu}%s${res} %s\n" "$prompt" "$msg"
+            ;;
+        *)
+            # Default to info
+            loglvl=2
+            prompt="INFO:"
+            printf "${blu}%s${res} %s\n" "$prompt" "$msg"
+    esac
+}
+
+# 0 is major, 1 is minor
+# This scipt uses new features like ${ command; } (command substitution without
+# a subshell)
+if (( BASH_VERSINFO[0] < 5 || BASH_VERSINFO[1] < 3 ))
+then
+    log err "Bash version is older than 5.3"
+    exit 1
+fi
+
+if (( $# == 0 ))
+then
+    log err "No arguments provided; provide template files as arguments"
+    exit 1
+fi
+
+if ! sway --validate
+then
+    log err "There was an error validating your Sway configuration file"
+    exit 1
+fi
+
+# TODO: Add flag to remove quotes or other symbols from values
+# TODO: Turn this into a function and let people name the associative array
+# Separate to lib dir if you do this
+declare -A confvars
+while read -r line
+do
+    if [[ "$line" == *"After replacement"* && "$line" =~ "set "(\$.*) ]]
+    then
+        declare key value
+        key="${BASH_REMATCH[1]/[[:blank:]]*}"
+        key="${key/\$}"
+        value="${BASH_REMATCH[1]/*\$${key}[[:blank:]]}"
+        confvars["$key"]="$value"
+    fi
+done < <(sway --verbose --validate 2>&1)
+
+apply_vars() {
+    local templ ext real
+    templ="$1"
+    ext="smxt"
+    real="${templ%%."${ext}"}"
+    bkup="${real}.bak"
+
+    if [[ "${templ##*.}" != "$ext" || ! -f "$templ" ]]
+    then
+        log err "file '${templ}' does not use the '.${ext}' extension"
+        exit 1
+    fi
+
+    if [[ -f "$real" ]]
+    then
+        log warn "'${real}' already exists! Creating backup..."
+        if mv "$real" "$bkup"
+        then
+            log info "Created backup file '${bkup}'"
+        else
+            log err "Could not create '${bkup}'! Exiting..."
+            exit 1
+        fi
+    fi
+
+    while read -r line
+    do
+        if [[ "$line" =~ %%(.*)%% ]]
+        then
+            if [[ "${BASH_REMATCH[1]}" == *\"* ||
+                  "${BASH_REMATCH[1]}" == *\'* ]]
+            then
+                log warn "Variable '${BASH_REMATCH[1]}' contains ' or \""
+                log warn "Place quotes outside of '%%variables%%'"
+                log info "Skipping '${BASH_REMATCH[1]}'..."
+                continue
+            fi
+
+            # Replace %%key%% with value; get value at key BASH_REMATCH[0]
+            local value
+            value="${confvars[${BASH_REMATCH[1]}]}"
+
+            log info "Replacing '${BASH_REMATCH[1]}' with '${value}'..."
+
+            echo "${line//"${BASH_REMATCH[0]}"/"$value"}" >> "${real}"
+        else
+            echo "${line}" >> "${real}"
+        fi
+    done < "${templ}"
+}
+
+for file in "${@}"
+do
+    log info "Applying Sway variables to '${blu}${file}${res}'..."
+    apply_vars "${file}"
+done
+
+log info "Done!"

@@ -1,0 +1,3 @@
+variable %%this isn't allowed%%
+variable %%terminal%%
+variable %%menu%% # multi-line variables?
