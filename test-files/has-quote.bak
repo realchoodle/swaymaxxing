@@ -1,2 +1,0 @@
-variable foot
-variable wmenu -i -f "LiterationMono Nerd Font Propo 11" -l 15 -p "SELECT:" -N "#282828"E6 -n "#ebdbb2" -M "#d79921" -m "#282828" -S "#458588"E6 -s "#fbf1c7" # multi-line variables?

@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# TODO: Add flags for stuff (see other TODOs)
+
 declare -a required
 required=(
     "bash"
