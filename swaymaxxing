@@ -2,6 +2,7 @@
 
 # TODO: Add flags for stuff (see other TODOs)
 # Dry run would be good
+# Help/usage too
 
 declare -a required
 required=(
@@ -79,6 +80,7 @@ then
     exit 1
 fi
 
+# TODO: What if someone does something like %%var%%%%var2%%? idk
 # TODO: Check for empty variables and warn
 # TODO: Add flag to remove quotes or other symbols from values
 # TODO: Turn this into a function and let people name the associative array
