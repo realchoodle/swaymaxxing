@@ -21,10 +21,21 @@ do
     fi
 done
 
-declare red ylw blu res
+# 0 is major, 1 is minor
+# This scipt uses new features like ${ command; } (command substitution without
+# a subshell)
+if (( BASH_VERSINFO[0] < 5 || BASH_VERSINFO[1] < 3 ))
+then
+    "Error: Bash version is older than 5.3"
+    exit 1
+fi
+
+declare blk red ylw blu res
+blk="${ tput setaf 8; }"
 red="${ tput setaf 9; }"
 ylw="${ tput setaf 11; }"
 blu="${ tput setaf 12; }"
+prp="${ tput setaf 13; }"
 res="${ tput sgr0; }"
 
 # TODO: Include log level flag
@@ -37,19 +48,49 @@ log() {
 
     case "$kind" in
         err)
+            # Urgent messages that require manual intervention
             loglvl=0
-            prompt="ERROR:"
-            printf "${red}%s${res} %s\n" "$prompt" "$msg" >&2
+            if (( wantlvl >= loglvl ))
+            then
+                prompt="ERROR:"
+                printf "${red}%s${res} %s\n" "$prompt" "$msg" >&2
+            fi
             ;;
         warn)
+            # Urgent messages that do not require manual intervention
             loglvl=1
-            prompt="WARN:"
-            printf "${ylw}%s${res} %s\n" "$prompt" "$msg"
+            if (( wantlvl >= loglvl ))
+            then
+                prompt="WARN:"
+                printf "${ylw}%s${res} %s\n" "$prompt" "$msg"
+            fi
             ;;
         info)
+            # Messages that report the script's general progress
             loglvl=2
-            prompt="INFO:"
-            printf "${blu}%s${res} %s\n" "$prompt" "$msg"
+            if (( wantlvl >= loglvl ))
+            then
+                prompt="INFO:"
+                printf "${blu}%s${res} %s\n" "$prompt" "$msg"
+            fi
+            ;;
+        extra)
+            # More granular progress reports that could get annoying
+            loglvl=3
+            if (( wantlvl >= loglvl ))
+            then
+                prompt="EXTRA:"
+                printf "${prp}%s${res} %s\n" "$prompt" "$msg"
+            fi
+            ;;
+        debug)
+            # Information that is primarily useful for developers but not users
+            loglvl=4
+            if (( wantlvl >= loglvl ))
+            then
+                prompt="DEBUG:"
+                printf "${blk}%s${res} %s\n" "$prompt" "$msg"
+            fi
             ;;
         *)
             # Default to info
@@ -59,30 +100,80 @@ log() {
     esac
 }
 
-# 0 is major, 1 is minor
-# This scipt uses new features like ${ command; } (command substitution without
-# a subshell)
-if (( BASH_VERSINFO[0] < 5 || BASH_VERSINFO[1] < 3 ))
-then
-    log err "Bash version is older than 5.3"
-    exit 1
-fi
-
-if (( $# == 0 ))
-then
-    log err "No arguments provided; provide template files as arguments"
-    exit 1
-fi
-
+log debug "Validating Sway config..."
 if ! sway --validate
 then
     log err "There was an error validating your Sway configuration file"
     exit 1
 fi
 
+usage() {
+    # Separate items with a minimum of two spaces
+    echo "Usage: ${0} [OPTIONS...] [-f FILE]"
+    echo
+    echo "Options:"
+    echo "  -f, --file"
+    echo "    Set the file to operate on"
+    echo "    Can be specified more than once"
+    echo
+    echo "  -l, --log-level INT"
+    echo "    Display logs of level INT and below"
+    echo "    INT may be any natural number less than or equal to 4"
+    echo "    Default is 2 (INFO)"
+    echo
+    echo "  -s, --strip-characters"
+    echo "    Set a string of characters to strip from Sway values"
+    echo "    Applies to all files provided by --file"
+    echo "    Accepts character classes like '[:punct:]'"
+    echo "    Example: '--strip-characters \\\$\\\"' strips \$ and \""
+    echo
+    echo "  -h, --help"
+    echo "    Display this message and exit"
+}
+
+if (( $# == 0 ))
+then
+    log err "No arguments provided"
+    usage >&2
+    exit 1
+fi
+
+# Defaults
+declare -i wantlvl
+wantlvl=2
+
+while (( $# > 0 ))
+do
+    case "$1" in
+        -f|--file)
+            declare -a files
+            files+=("${2}")
+            shift
+            ;;
+        -l|--log-level)
+            declare -i wantlvl
+            wantlvl="${2}"
+            shift
+            ;;
+        -s|--strip-characters)
+            declare chars
+            chars="${2}"
+            shift
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        *)
+            log err "Unknown argument: '${1}'"
+            usage >&2
+            exit 1
+    esac
+    shift
+done
+
 # TODO: What if someone does something like %%var%%%%var2%%? idk
 # TODO: Check for empty variables and warn
-# TODO: Add flag to remove quotes or other symbols from values
 # TODO: Turn this into a function and let people name the associative array
 # Separate to lib dir if you do this
 declare -A confvars
@@ -93,10 +184,16 @@ do
         declare key value
         key="${BASH_REMATCH[1]/[[:blank:]]*}"
         key="${key/\$}"
+        log debug "KEY: $key"
+
         value="${BASH_REMATCH[1]/*\$${key}[[:blank:]]}"
+        value="${value//["${chars}"]}"
+        log debug "VALUE: $value"
+        
         confvars["$key"]="$value"
     fi
 done < <(sway --verbose --validate 2>&1) # Verbose validation shows vars
+log debug "CONFVARS: ${confvars[@]@K}"
 
 apply_vars() {
     local templ ext real
@@ -116,7 +213,7 @@ apply_vars() {
         log warn "'${real}' already exists! Creating backup..."
         if mv "$real" "$bkup"
         then
-            log info "Created backup file '${bkup}'"
+            log extra "Created backup file '${bkup}'"
         else
             log err "Could not create '${bkup}'! Exiting..."
             exit 1
@@ -127,35 +224,36 @@ apply_vars() {
     # ${templ} and then skip over those lines to make things faster?
     while read -r line
     do
-        if [[ "$line" =~ %%(.*)%% ]]
+        if [[ "$line" =~ (%%([^%]*)%%) ]]
         then
-            if [[ "${BASH_REMATCH[1]}" == *\"* ||
-                  "${BASH_REMATCH[1]}" == *\'* ]]
-            then
-                log warn "Variable '${BASH_REMATCH[1]}' contains ' or \""
-                log warn "Place quotes outside of '%%variables%%'"
-                log info "Skipping '${BASH_REMATCH[1]}'..."
-                continue
-            fi
-
-            # Replace %%key%% with value; get value at key BASH_REMATCH[0]
+            # Capture values of BASH_REMATCH before reusing =~
+            local outer inner
+            outer="${BASH_REMATCH[1]}"
+            inner="${BASH_REMATCH[2]}"
+            
             local value
-            value="${confvars[${BASH_REMATCH[1]}]}"
+            value="${confvars[${inner}]}"
 
-            log info "Replacing '${BASH_REMATCH[1]}' with '${value}'..."
-
-            echo "${line//"${BASH_REMATCH[0]}"/"$value"}" >> "${real}"
+            if [[ "$inner" =~ ^[[:blank:]%]*$ ]]
+            then
+                log debug "INNER: '${inner}'"
+            else
+                log extra "Replacing '${inner}' with '${value}'..."
+                echo "${line//"${outer}"/"${value}"}" >> "${real}"
+            fi
         else
+            log debug "Line did not have any variables"
+            log debug "LINE: '${line}'"
             echo "${line}" >> "${real}"
         fi
     done < "${templ}"
 }
 
-for file in "${@}"
+for file in "${files[@]}"
 do
-    log info "Applying Sway variables to '${blu}${file}${res}'..."
+    log info "Applying Sway variables to '${file}'..."
     apply_vars "${file}"
+    log extra "Finished applying variables to '${file}'"
 done
 
-log info "Done!"
 exit 0
