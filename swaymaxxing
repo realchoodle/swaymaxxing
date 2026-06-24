@@ -227,6 +227,8 @@ apply_vars() {
         fi
     else
         log extra "'--no-backup' was set; skipped backup creation"
+        log extra "Wiping '${real}' without creating a backup..."
+        printf "" > "${real}"
     fi
 
     # TODO: I wonder if I could keep track of how many lines have been read from
