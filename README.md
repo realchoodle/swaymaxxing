@@ -7,6 +7,9 @@ configuration files, it is still not as safe and featureful as it needs to be.
 
 ## Basic Usage
 
+> [!Note]
+> See the `--help` flag for more options.
+
 Provide paths to `.smxt` template files as arguments for `swaymaxxing` using
 the `-f` (or `--file`) flag. For example:
 
