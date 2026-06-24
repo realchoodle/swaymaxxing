@@ -124,10 +124,9 @@ usage() {
     echo "  -n, --no-backup"
     echo "    Do not create a FILE.bak file if FILE already exists"
     echo
-    echo "  -s, --strip-characters"
+    echo "  -s, --strip-characters STRING"
     echo "    Set a string of characters to strip from Sway values"
     echo "    Applies to all files provided by --file"
-    echo "    Accepts character classes like '[:punct:]'"
     echo "    Example: '--strip-characters \\\$\\\"' strips \$ and \""
     echo
     echo "  -h, --help"
