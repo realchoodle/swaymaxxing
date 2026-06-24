@@ -5,13 +5,13 @@ configs in other files. This script is a ***work in progress***; if you decide
 to use it, do so with caution. While `swaymaxxing` attempts to preserve your
 configuration files, it is still not as safe and featureful as it needs to be.
 
-## Usage
+## Basic Usage
 
-Provide paths to `.smxt` template files as arguments for `swaymaxxing`. For
-example:
+Provide paths to `.smxt` template files as arguments for `swaymaxxing` using
+the `-f` (or `--file`) flag. For example:
 
 ```bash
-swaymaxxing path/to/file0.smxt path/to/file1.smxt path/to/file2.smxt
+swaymaxxing -f path/to/file0.smxt -f path/to/file1.smxt -f path/to/file2.smxt
 ```
 
 `.smxt` (`swaymaxxing` template) is a made-up file extension. `.smxt` files use
