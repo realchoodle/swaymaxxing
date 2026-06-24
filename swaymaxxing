@@ -121,6 +121,9 @@ usage() {
     echo "    INT may be any natural number less than or equal to 4"
     echo "    Default is 2 (INFO)"
     echo
+    echo "  -n, --no-backup"
+    echo "    Do not create a FILE.bak file if FILE already exists"
+    echo
     echo "  -s, --strip-characters"
     echo "    Set a string of characters to strip from Sway values"
     echo "    Applies to all files provided by --file"
@@ -142,9 +145,16 @@ fi
 declare -i wantlvl
 wantlvl=2
 
+declare backup
+backup="true"
+
 while (( $# > 0 ))
 do
     case "$1" in
+        -n|--no-backup)
+            declare backup
+            backup="false"
+            ;;
         -f|--file)
             declare -a files
             files+=("${2}")
@@ -208,7 +218,7 @@ apply_vars() {
         exit 1
     fi
 
-    if [[ -f "$real" ]]
+    if [[ -f "$real" && "$backup" == "true" ]]
     then
         log warn "'${real}' already exists! Creating backup..."
         if mv "$real" "$bkup"
@@ -218,6 +228,8 @@ apply_vars() {
             log err "Could not create '${bkup}'! Exiting..."
             exit 1
         fi
+    else
+        log extra "'--no-backup' was set; skipped backup creation"
     fi
 
     # TODO: I wonder if I could keep track of how many lines have been read from
