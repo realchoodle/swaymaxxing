@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 
-# TODO: Add flags for stuff (see other TODOs)
-# Dry run would be good
-# Help/usage too
+# TODO: I reorganized this script hastily; get rid of redundant variables and
+# related issues
 
 declare -a required
 required=(
@@ -22,8 +21,7 @@ do
 done
 
 # 0 is major, 1 is minor
-# This scipt uses new features like ${ command; } (command substitution without
-# a subshell)
+# This scipt uses new features like ${ command; }
 if (( BASH_VERSINFO[0]*100 + BASH_VERSINFO[1] < 503 ))
 then
     echo "Error: Bash version is older than 5.3" >&2
@@ -100,13 +98,6 @@ log() {
     esac
 }
 
-log debug "Validating Sway config..."
-if ! sway --validate
-then
-    log err "There was an error validating your Sway configuration file"
-    exit 1
-fi
-
 usage() {
     # Separate items with a minimum of two spaces
     echo "Usage: ${0} [OPTIONS...] [-f FILE]"
@@ -133,6 +124,14 @@ usage() {
     echo "    Display this message and exit"
 }
 
+log debug "Validating Sway config..."
+if ! sway --validate
+then
+    log err "There was an error validating your Sway configuration file"
+    usage >&2
+    exit 1
+fi
+
 if (( $# == 0 ))
 then
     log err "No arguments provided"
@@ -144,14 +143,14 @@ fi
 declare -i wantlvl
 wantlvl=2
 
-declare backup
-backup="true"
+declare mkbkup
+mkbkup="true"
 
 while (( $# > 0 ))
 do
     case "$1" in
         -n|--no-backup)
-            backup="false"
+            mkbkup="false"
             ;;
         -f|--file)
             declare -a files
@@ -179,31 +178,31 @@ do
     shift
 done
 
-# TODO: What if someone does something like %%var%%%%var2%%? idk
-# TODO: Check for empty variables and warn
-# TODO: Turn this into a function and let people name the associative array
-# Separate to lib dir if you do this
-declare -A confvars
-while read -r line
-do
-    if [[ "$line" == *"After replacement"* && "$line" =~ "set "(\$.*) ]]
-    then
-        declare key value
-        key="${BASH_REMATCH[1]/[[:blank:]]*}"
-        key="${key/\$}"
-        log debug "KEY: $key"
+# TODO: Let people name associative array 
+get_vars() {
+    declare -gA confvars
+    while read -r line
+    do
+        if [[ "$line" == *"After replacement"* && "$line" =~ set\ (\$.*) ]]
+        then
+            declare key value
+            key="${BASH_REMATCH[1]/[[:blank:]]*}"
+            key="${key/\$}"
+            log debug "KEY: $key"
 
-        value="${BASH_REMATCH[1]/*\$${key}[[:blank:]]}"
-        value="${value//["${chars}"]}"
-        log debug "VALUE: $value"
-        
-        confvars["$key"]="$value"
-    fi
-done < <(sway --verbose --validate 2>&1) # Verbose validation shows vars
-log debug "CONFVARS: ${confvars[@]@K}"
+            value="${BASH_REMATCH[1]/*\$${key}[[:blank:]]}"
+            value="${value//["${chars}"]}"
+            log debug "VALUE: $value"
 
-apply_vars() {
-    local templ ext real
+            confvars["$key"]="$value"
+        fi
+    done < <(sway --verbose --validate 2>&1) # Verbose validation shows vars
+
+    log debug "CONFVARS: ${confvars[@]@K}"
+}
+
+check_file() {
+    local templ ext real bkup
     templ="$1"
     ext="smxt"
     real="${templ%%."${ext}"}"
@@ -215,7 +214,7 @@ apply_vars() {
         exit 1
     fi
 
-    if [[ -f "$real" && "$backup" == "true" ]]
+    if [[ -f "$real" && "$mkbkup" == "true" ]]
     then
         log warn "'${real}' already exists! Creating backup..."
         if mv "$real" "$bkup"
@@ -226,45 +225,55 @@ apply_vars() {
             exit 1
         fi
     else
-        log extra "'--no-backup' was set; skipped backup creation"
-        log extra "Wiping '${real}' without creating a backup..."
-        printf "" > "${real}"
+        log info "Skipped backup creation"
     fi
+}
 
+apply_vars() {
     # TODO: I wonder if I could keep track of how many lines have been read from
     # ${templ} and then skip over those lines to make things faster?
+    local templ ext real bkup
+    templ="$1"
+    ext="smxt"
+    real="${templ%%."${ext}"}"
+    bkup="${real}.bak"
+
+    local -a newreal
     while read -r line
     do
-        if [[ "$line" =~ (%%([^%]*)%%) ]]
-        then
-            # Capture values of BASH_REMATCH before reusing =~
+        while [[ "$line" =~ (%%([^%]*)%%) ]]
+        do
             local outer inner
             outer="${BASH_REMATCH[1]}"
             inner="${BASH_REMATCH[2]}"
-            
+
             local value
             value="${confvars[${inner}]}"
 
             if [[ "$inner" =~ ^[[:blank:]%]*$ ]]
             then
+                log debug "Inner was not a valid variable"
                 log debug "INNER: '${inner}'"
             else
                 log extra "Replacing '${inner}' with '${value}'..."
-                echo "${line//"${outer}"/"${value}"}" >> "${real}"
+                line="${line//"${outer}"/"${value}"}"
             fi
-        else
-            log debug "Line did not have any variables"
-            log debug "LINE: '${line}'"
-            echo "${line}" >> "${real}"
-        fi
+        done
+        newreal+=("$line")
     done < "${templ}"
+    
+    echo "$newreal" > "$real"
 }
+
+get_vars
 
 for file in "${files[@]}"
 do
+    log extra "Checking validity of '${file}'..."
+    check_file "${file}"
     log info "Applying Sway variables to '${file}'..."
     apply_vars "${file}"
-    log extra "Finished applying variables to '${file}'"
+    log info "Finished applying variables to '${file}'"
 done
 
 exit 0
