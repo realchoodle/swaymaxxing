@@ -238,7 +238,7 @@ apply_vars() {
     real="${templ%%."${ext}"}"
     bkup="${real}.bak"
 
-    local -a newreal
+    local -a realarr
     while read -r line
     do
         while [[ "$line" =~ (%%([^%]*)%%) ]]
@@ -259,17 +259,21 @@ apply_vars() {
                 line="${line//"${outer}"/"${value}"}"
             fi
         done
-        newreal+=("$line")
+        log debug "Adding '${line}' to realarr..."
+        realarr+=("$line")
     done < "${templ}"
+    log debug "REALARR: '${realarr[@]}'"
     
-    echo "$newreal" > "$real"
+    log debug "Overwriting '${real}' with realarr..."
+    printf "%s\n" "${realarr[@]}" > "$real"
 }
 
+log info "Getting variables from Sway configuration file(s)..."
 get_vars
 
 for file in "${files[@]}"
 do
-    log extra "Checking validity of '${file}'..."
+    log info "Checking validity of '${file}'..."
     check_file "${file}"
     log info "Applying Sway variables to '${file}'..."
     apply_vars "${file}"
