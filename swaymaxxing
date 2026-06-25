@@ -17,15 +17,15 @@ do
     fi
 done
 
-# [0] is major, [1] is minor
-# This scipt uses new features like ${ command; }
+# This script uses new features like ${ command; }
+# BASH_VERSINFO[0] is major version; BASH_VERSINFO[1] is minor version
 if (( BASH_VERSINFO[0]*100 + BASH_VERSINFO[1] < 503 ))
 then
     echo "Error: Bash version is older than 5.3" >&2
     exit 1
 fi
 
-declare blk red ylw blu res
+declare blk red ylw blu prp res
 blk="${ tput setaf 8; }"
 red="${ tput setaf 9; }"
 ylw="${ tput setaf 11; }"
@@ -135,21 +135,27 @@ then
     exit 1
 fi
 
-# Defaults
+# Default log level is INFO
 declare -i wantlvl
 wantlvl=2
 
+# Make backups by default
 declare mkbkup
 mkbkup="true"
 
+# Strip nothing by default
+declare chars
+chars=""
+
+declare -a files
+
 while (( $# > 0 ))
 do
-    case "$1" in
+    case "${1}" in
         -n|--no-backup)
             mkbkup="false"
             ;;
         -f|--file)
-            declare -a files
             files+=("${2}")
             shift
             ;;
@@ -158,7 +164,6 @@ do
             shift
             ;;
         -s|--strip-characters)
-            declare chars
             chars="${2}"
             shift
             ;;
@@ -191,6 +196,7 @@ get_vars() {
         log err "  - 'sway -V -C' no longer uses keyphrase '${keyphrase}'"
         log err "  - There are no variables set in your Sway config files"
         log err "  - There is a typo in this script"
+        exit 1
     fi
 
     for line in "${swaylogs[@]}"
@@ -236,8 +242,6 @@ check_file() {
             log err "Could not create '${bkup}'! Exiting..."
             exit 1
         fi
-    else
-        log info "Skipped backup creation"
     fi
 }
 
