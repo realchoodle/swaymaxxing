@@ -17,6 +17,12 @@ the `-f` (or `--file`) flag. For example:
 ./swaymaxxing -f path/to/file0.smxt -f path/to/file1.smxt -f path/to/file2.smxt
 ```
 
+Alternatively, use `swaymaxxing` with another program or in a script:
+
+```bash
+find -L ~/.config -name "*.smxt" -exec ./swaymaxxing -f {} \;
+```
+
 `.smxt` (`swaymaxxing` template) is a made-up file extension. `.smxt` files use
 `%%this_format%%` to mark items as variables, but should be identical to
 whatever file you want to operate on aside from that. For instance, if you had
@@ -37,16 +43,14 @@ the following format instead:
 ```ini
 # ~/.config/mako/config.smxt
 
-font=%%font_mono%%
+font=%%font_mono%% %%font_size%%
 background-color=%%bg0%%
 border-color=%%bg4%%
 text-color=%%fg1%%
 ```
 
-***Crucially***, this assumes that `font_mono`, `bg0`, `bg4`, and `fg1` are real
-variables somewhere in one of your Sway configuration files. If you wanted to
-quote these variables in this configuration file, but not in your Sway files,
-then you would have to put quotes outside of the `%%variable%%`, resulting in
-`"%%variable%%"` or `'%%variable%%'`.
-
-
+***Crucially***, this assumes that `font_mono`, `font_size`, `bg0`, `bg4`, and
+`fg1` are real variables somewhere in one of your Sway configuration files. If
+you wanted to quote these variables in this configuration file, but not in your
+Sway files, then you would have to put quotes outside of the `%%variable%%`,
+resulting in `"%%variable%%"` or `'%%variable%%'`.
