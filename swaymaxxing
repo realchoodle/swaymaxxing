@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
 
-# TODO: I reorganized this script hastily; get rid of redundant variables and
-# related issues
-
 declare -a required
 required=(
     "bash"
@@ -20,7 +17,7 @@ do
     fi
 done
 
-# 0 is major, 1 is minor
+# [0] is major, [1] is minor
 # This scipt uses new features like ${ command; }
 if (( BASH_VERSINFO[0]*100 + BASH_VERSINFO[1] < 503 ))
 then
@@ -36,7 +33,6 @@ blu="${ tput setaf 12; }"
 prp="${ tput setaf 13; }"
 res="${ tput sgr0; }"
 
-# TODO: Include log level flag
 log() {
     local kind msg prompt
     kind="$1"
@@ -98,8 +94,8 @@ log() {
     esac
 }
 
+# Separate items with a minimum of two spaces
 usage() {
-    # Separate items with a minimum of two spaces
     echo "Usage: ${0} [OPTIONS...] [-f FILE]"
     echo
     echo "Options:"
@@ -181,9 +177,25 @@ done
 # TODO: Let people name associative array 
 get_vars() {
     declare -gA confvars
-    while read -r line
+
+    local -a swaylogs
+    mapfile -t swaylogs < <(sway --verbose --validate 2>&1)
+
+    local keyphrase
+    keyphrase="After replacement"
+
+    if [[ "${swaylogs[*]}" != *"$keyphrase"* ]]
+    then
+        log err "Keyphrase '${keyphrase}' is missing"
+        log err "Some possible causes:"
+        log err "  - 'sway -V -C' no longer uses keyphrase '${keyphrase}'"
+        log err "  - There are no variables set in your Sway config files"
+        log err "  - There is a typo in this script"
+    fi
+
+    for line in "${swaylogs[@]}"
     do
-        if [[ "$line" == *"After replacement"* && "$line" =~ set\ (\$.*) ]]
+        if [[ "$line" == *"$keyphrase"* && "$line" =~ set\ (\$.*) ]]
         then
             declare key value
             key="${BASH_REMATCH[1]/[[:blank:]]*}"
@@ -196,7 +208,7 @@ get_vars() {
 
             confvars["$key"]="$value"
         fi
-    done < <(sway --verbose --validate 2>&1) # Verbose validation shows vars
+    done
 
     log debug "CONFVARS: ${confvars[@]@K}"
 }
@@ -273,11 +285,11 @@ get_vars
 
 for file in "${files[@]}"
 do
-    log info "Checking validity of '${file}'..."
+    log extra "Checking validity of '${file}'..."
     check_file "${file}"
     log info "Applying Sway variables to '${file}'..."
     apply_vars "${file}"
-    log info "Finished applying variables to '${file}'"
+    log extra "Finished applying variables to '${file}'"
 done
 
 exit 0
