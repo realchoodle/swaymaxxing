@@ -4,9 +4,11 @@
 configs in other files. `swaymaxxing` is written in (mostly) pure Bash. The
 exceptions are:
 
-- `tput`, to add color to logs.
-- `mv`, to create backup files.
-- `sway`, to validate and obtain variables from Sway configuration files.
+- `tput`, to add color to logs
+- `mv`, to create backup files
+- `sway`, to validate Sway configuration files and obtain variables from them
+
+I have tried to use the external programs above sparingly.
 
 ## Basic Usage
 
