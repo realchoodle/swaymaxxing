@@ -14,7 +14,13 @@ Provide paths to `.smxt` template files as arguments for `swaymaxxing` using
 the `-f` (or `--file`) flag. For example:
 
 ```bash
-swaymaxxing -f path/to/file0.smxt -f path/to/file1.smxt -f path/to/file2.smxt
+./swaymaxxing -f path/to/file0.smxt -f path/to/file1.smxt -f path/to/file2.smxt
+```
+
+Alternatively, to apply your variables to every file in `~/.config`:
+
+```bash
+find ~/.config -name "*.smxt" -exec ./swaymaxxing -f {} \;
 ```
 
 `.smxt` (`swaymaxxing` template) is a made-up file extension. `.smxt` files use
@@ -48,3 +54,5 @@ variables somewhere in one of your Sway configuration files. If you wanted to
 quote these variables in this configuration file, but not in your Sway files,
 then you would have to put quotes outside of the `%%variable%%`, resulting in
 `"%%variable%%"` or `'%%variable%%'`.
+
+
