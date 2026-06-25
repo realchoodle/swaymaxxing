@@ -34,11 +34,12 @@ prp="${ tput setaf 13; }"
 res="${ tput sgr0; }"
 
 log() {
-    local kind msg prompt
+    local kind msg
     kind="$1"
     msg="$2"
 
     local -i loglvl
+    local prompt
 
     case "$kind" in
         err)
@@ -188,6 +189,7 @@ get_vars() {
 
     local keyphrase
     keyphrase="After replacement"
+    readonly keyphrase
 
     if [[ "${swaylogs[*]}" != *"$keyphrase"* ]]
     then
@@ -203,11 +205,12 @@ get_vars() {
     do
         if [[ "$line" == *"$keyphrase"* && "$line" =~ set\ (\$.*) ]]
         then
-            local key value
+            local key
             key="${BASH_REMATCH[1]/[[:blank:]]*}"
             key="${key/\$}"
             log debug "KEY: $key"
 
+            local value
             value="${BASH_REMATCH[1]/*\$${key}[[:blank:]]}"
             value="${value//["${chars}"]}"
             log debug "VALUE: $value"
