@@ -1,9 +1,12 @@
 # README.md
 
 `swaymaxxing` is a Bash script that lets you use variables set in your Sway
-configs in other files. This script is a ***work in progress***; if you decide
-to use it, do so with caution. While `swaymaxxing` attempts to preserve your
-configuration files, it is still not as safe and featureful as it needs to be.
+configs in other files. `swaymaxxing` is written in (mostly) pure Bash. The
+exceptions are:
+
+- `tput`, to add color to logs.
+- `mv`, to create backup files.
+- `sway`, to validate and obtain variables from Sway configuration files.
 
 ## Basic Usage
 
@@ -20,7 +23,18 @@ the `-f` (or `--file`) flag. For example:
 Alternatively, use `swaymaxxing` with another program or in a script:
 
 ```bash
-find -L ~/.config -name "*.smxt" -exec ./swaymaxxing -f {} \;
+#!/usr/bin/env bash
+
+declare -i lvl
+lvl=${1:-2}
+
+echo "Log level is: '${lvl}'"
+
+# -L to follow symlinks
+find -L "${HOME}"/.config -name "*.smxt" -exec swaymaxxing \
+    --log-level "${lvl}" \
+    --strip-characters \"\# \
+    --file {} \;
 ```
 
 `.smxt` (`swaymaxxing` template) is a made-up file extension. `.smxt` files use
