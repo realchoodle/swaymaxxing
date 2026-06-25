@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+# TODO: Add -e/--export-variables to export Sway variables to a new file. Before
+# doing this, I should move most (or all) of the functions in this file to
+# separate ones. It might be better to make that a separate project entirely
+# that just uses the functions I have made here. So, I could make something like
+# libswaymaxxing which is separate from swaymaxxing and the extraction script.
+
 declare -a required
 required=(
     "bash"
@@ -253,7 +259,7 @@ check_file() {
 
 apply_vars() {
     # TODO: I wonder if I could keep track of how many lines have been read from
-    # ${templ} and then skip over those lines to make things faster?
+    # $templ and then skip over those lines to make things faster?
     local templ ext real bkup
     templ="$1"
     ext="smxt"
