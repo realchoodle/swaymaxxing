@@ -232,6 +232,7 @@ check_file() {
         exit 1
     fi
 
+    # True if real file exists as regular file and user is okay with backups
     if [[ -f "$real" && "$mkbkup" == "true" ]]
     then
         log warn "'${real}' already exists! Creating backup..."
@@ -242,6 +243,8 @@ check_file() {
             log err "Could not create '${bkup}'! Exiting..."
             exit 1
         fi
+    else
+        log debug "Skipped backup; file does not exist or '--no-backup' is set"
     fi
 }
 
