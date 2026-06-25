@@ -17,12 +17,6 @@ the `-f` (or `--file`) flag. For example:
 ./swaymaxxing -f path/to/file0.smxt -f path/to/file1.smxt -f path/to/file2.smxt
 ```
 
-Alternatively, to apply your variables to every file in `~/.config`:
-
-```bash
-find ~/.config -name "*.smxt" -exec ./swaymaxxing -f {} \;
-```
-
 `.smxt` (`swaymaxxing` template) is a made-up file extension. `.smxt` files use
 `%%this_format%%` to mark items as variables, but should be identical to
 whatever file you want to operate on aside from that. For instance, if you had
