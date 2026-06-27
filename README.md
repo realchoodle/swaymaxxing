@@ -31,7 +31,7 @@ declare -i lvl
 lvl="${1:-2}"
 
 declare -a flags
-while IFS= read -r -d '' file
+while read -r -d '' file
 do
     flags+=(--file "$file")
 done < <(find -L "${HOME}/.config" -name "*.smxt" -print0)
