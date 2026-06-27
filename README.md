@@ -28,13 +28,17 @@ Alternatively, use `swaymaxxing` with another program or in a script:
 #!/usr/bin/env bash
 
 declare -i lvl
-lvl="${1:-2}"
+lvl="${1:-1}"
+
+shopt -s globstar
 
 declare -a flags
-while read -r -d '' file
+while IFS= read -r -d '' file
 do
     flags+=(--file "$file")
-done < <(find -L "${HOME}/.config" -name "*.smxt" -print0)
+done < <(printf "%s\0" ~/.config/**/*.smxt)
+
+shopt -u globstar
 
 swaymaxxing --log-level "${lvl}" --strip-characters \"\# "${flags[@]}"
 ```
