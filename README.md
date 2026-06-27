@@ -28,15 +28,15 @@ Alternatively, use `swaymaxxing` with another program or in a script:
 #!/usr/bin/env bash
 
 declare -i lvl
-lvl=${1:-2}
+lvl="${1:-2}"
 
-echo "Log level is: '${lvl}'"
+declare -a flags
+while IFS= read -r -d '' file
+do
+    flags+=(--file "$file")
+done < <(find -L "${HOME}/.config" -name "*.smxt" -print0)
 
-# -L to follow symlinks
-find -L "${HOME}"/.config -name "*.smxt" -exec swaymaxxing \
-    --log-level "${lvl}" \
-    --strip-characters \"\# \
-    --file {} \;
+swaymaxxing --log-level "${lvl}" --strip-characters \"\# "${flags[@]}"
 ```
 
 `.smxt` (`swaymaxxing` template) is a made-up file extension. `.smxt` files use
