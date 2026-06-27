@@ -31,7 +31,8 @@ then
     exit 1
 fi
 
-declare blk red ylw blu prp res
+declare bld blk red ylw blu prp res
+bld="${ tput bold; }"
 blk="${ tput setaf 8; }"
 red="${ tput setaf 9; }"
 ylw="${ tput setaf 11; }"
@@ -94,36 +95,37 @@ log() {
             fi
             ;;
         *)
-            # Default to info
-            loglvl=2
-            prompt="INFO:"
-            printf "${blu}%s${res} %s\n" "$prompt" "$msg"
+            loglvl=0
+            prompt="PROGRAMMER ERROR:"
+            printf "${red}%s${res} %s\n" "$prompt" "'$kind' is an invalid log level!" >&2
+            exit 1
     esac
 }
 
 # Separate items with a minimum of two spaces
 usage() {
-    echo "Usage: ${0} [OPTIONS...] [-f FILE]"
+    echo "${bld}Usage:${res} ${0} [OPTIONS...] [-f FILE...]"
     echo
-    echo "Options:"
-    echo "  -f, --file"
+    echo "${bld}Options:${res}"
+    echo "  ${bld}-f, --file${res}"
     echo "    Set the file to operate on"
     echo "    Can be specified more than once"
     echo
-    echo "  -l, --log-level INT"
+    echo "  ${bld}-l, --log-level INT${res}"
     echo "    Display logs of level INT and below"
-    echo "    INT may be any natural number less than or equal to 4"
-    echo "    Default is 2 (INFO)"
+    echo "    Default is 1 (WARN, ERROR)"
+    echo "    Highest is 4 (DEBUG, EXTRA, INFO, WARN, ERROR)"
+    echo "    Lowest is 0 (ERROR)"
     echo
-    echo "  -n, --no-backup"
+    echo "  ${bld}-n, --no-backup${res}"
     echo "    Do not create a FILE.bak file if FILE already exists"
     echo
-    echo "  -s, --strip-characters STRING"
+    echo "  ${bld}-s, --strip-characters STRING${res}"
     echo "    Set a string of characters to strip from Sway values"
     echo "    Applies to all files provided by --file"
     echo "    Example: '--strip-characters \\\$\\\"' strips \$ and \""
     echo
-    echo "  -h, --help"
+    echo "  ${bld}-h, --help${res}"
     echo "    Display this message and exit"
 }
 
@@ -142,9 +144,9 @@ then
     exit 1
 fi
 
-# Default log level is INFO
+# Default log level is WARN
 declare -i wantlvl
-wantlvl=2
+wantlvl=1
 
 # Make backups by default
 declare mkbkup
